@@ -1,0 +1,25 @@
+import argparse
+from ping import Ping
+
+class PyPing(object)
+	"""
+	Send pings and write the results like
+	a Cisco router.
+    """
+	def __init__(self):
+		"""
+
+        """
+		pass
+
+def main():
+	"""
+	Parse the arguments.
+    """
+	parser = argparse.ArgumentParser()
+	pass
+
+
+
+if __name__ == "__main__":
+	main()
