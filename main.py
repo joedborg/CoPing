@@ -1,33 +1,39 @@
 import argparse
 from ping import Ping
 
-class PyPing(object)
+class PyPing(object):
 	"""
 	Send pings and write the results like
 	a Cisco router.
     """
 	def __init__(self, args):
 		"""
-
+		Move the arguments into the instance's
+		namespace.
         """
-		pass
+		self.destination = args.destination
 
-    def __call__(self):
+	def __call__(self):
 		"""
-
+		Run the ping, print '!' for success
+		and '.' for failure.
         """
-		pass
+		p = Ping(self.destination)
+		if p.do():
+			print "!"
+		else:
+			print "."
 
 def main():
 	"""
 	Parse the arguments.
     """
 	parser = argparse.ArgumentParser()
-	parser.add_item('destination')
+	parser.add_argument('destination')
 
-    args = parser.parse_args()
+	args = parser.parse_args()
 
-    do = PyPing(args)
+	do = PyPing(args)
 	do()
 
 
