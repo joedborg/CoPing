@@ -2,17 +2,13 @@
 # coding: utf-8
 
 """
+    https://github.com/joedborg/PyPing/
     A pure python ping implementation using raw sockets.
 
     Note that ICMP messages can only be send from processes running as root
     (in Windows, you must run this script as 'Administrator').
 
-    Bugs are naturally mine. I'd be glad to hear about them. There are
-    certainly word - size dependencies here.
-    
-    :homepage: https://github.com/jedie/python-ping/
-    :copyleft: 1989-2011 by the python-ping team, see AUTHORS for more details.
-    :license: GNU GPL v2, see LICENSE for more details.
+    Adapted by me from the original at https://github.com/jedie/python-ping/.
 """
 
 
@@ -102,10 +98,11 @@ def to_ip(addr):
 
 
 class Ping(object):
-    def __init__(self, destination, timeout=1000, packet_size=55, own_id=None):
+    def __init__(self, destination, timeout=1000, packet_size=55, own_id=None, silent=False):
         self.destination = destination
         self.timeout = timeout
         self.packet_size = packet_size
+        self.silent = silent
         if own_id is None:
             self.own_id = os.getpid() & 0xFFFF
         else:
@@ -129,44 +126,49 @@ class Ping(object):
     #--------------------------------------------------------------------------
 
     def print_start(self):
-        print("\nPYTHON-PING %s (%s): %d data bytes" % (self.destination, self.dest_ip, self.packet_size))
+        if not self.silent:
+            print("\nPYTHON-PING %s (%s): %d data bytes" % (self.destination, self.dest_ip, self.packet_size))
 
     def print_unknown_host(self, e):
-        print("\nPYTHON-PING: Unknown host: %s (%s)\n" % (self.destination, e.args[1]))
+        if not self.silent:
+            print("\nPYTHON-PING: Unknown host: %s (%s)\n" % (self.destination, e.args[1]))
         sys.exit(-1)
 
     def print_success(self, delay, ip, packet_size, ip_header, icmp_header):
-        if ip == self.destination:
-            from_info = ip
-        else:
-            from_info = "%s (%s)" % (self.destination, ip)
+        if not self.silent:
+            if ip == self.destination:
+                from_info = ip
+            else:
+                from_info = "%s (%s)" % (self.destination, ip)
 
-        print("%d bytes from %s: icmp_seq=%d ttl=%d time=%.1f ms" % (
-            packet_size, from_info, icmp_header["seq_number"], ip_header["ttl"], delay)
-        )
-        #print("IP header: %r" % ip_header)
-        #print("ICMP header: %r" % icmp_header)
+            print("%d bytes from %s: icmp_seq=%d ttl=%d time=%.1f ms" % (
+                packet_size, from_info, icmp_header["seq_number"], ip_header["ttl"], delay)
+            )
+            #print("IP header: %r" % ip_header)
+            #print("ICMP header: %r" % icmp_header)
 
     def print_failed(self):
-        print("Request timed out.")
+        if not self.silent:
+            print("Request timed out.")
 
     def print_exit(self):
-        print("\n----%s PYTHON PING Statistics----" % (self.destination))
+        if not self.silent:
+            print("\n----%s PYTHON PING Statistics----" % (self.destination))
 
-        lost_count = self.send_count - self.receive_count
-        #print("%i packets lost" % lost_count)
-        lost_rate = float(lost_count) / self.send_count * 100.0
+            lost_count = self.send_count - self.receive_count
+            #print("%i packets lost" % lost_count)
+            lost_rate = float(lost_count) / self.send_count * 100.0
 
-        print("%d packets transmitted, %d packets received, %0.1f%% packet loss" % (
-            self.send_count, self.receive_count, lost_rate
-        ))
-
-        if self.receive_count > 0:
-            print("round-trip (ms)  min/avg/max = %0.3f/%0.3f/%0.3f" % (
-                self.min_time, self.total_time / self.receive_count, self.max_time
+            print("%d packets transmitted, %d packets received, %0.1f%% packet loss" % (
+                self.send_count, self.receive_count, lost_rate
             ))
 
-        print("")
+            if self.receive_count > 0:
+                print("round-trip (ms)  min/avg/max = %0.3f/%0.3f/%0.3f" % (
+                    self.min_time, self.total_time / self.receive_count, self.max_time
+                ))
+
+            print("")
 
     #--------------------------------------------------------------------------
 
@@ -181,7 +183,7 @@ class Ping(object):
     def setup_signal_handler(self):
         signal.signal(signal.SIGINT, self.signal_handler)   # Handle Ctrl-C
         if hasattr(signal, "SIGBREAK"):
-            # Handle Ctrl-Break e.g. under Windows 
+            # Handle Ctrl-Break e.g. under Windows
             signal.signal(signal.SIGBREAK, self.signal_handler)
 
     #--------------------------------------------------------------------------
