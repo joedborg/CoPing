@@ -1,4 +1,4 @@
-import argparse
+import sys, argparse
 from ping import Ping
 
 class PyPing(object):
@@ -19,10 +19,13 @@ class PyPing(object):
         and '.' for failure.
         """
         p = Ping(self.destination, silent=True)
-        if p.do():
-            print('!')
-        else:
-            print('.')
+        while True:
+            if p.do():
+                sys.stdout.write('!')
+                sys.stdout.flush()
+            else:
+                sys.stdout.write('.')
+                sys.stdout.flush()
 
 def main():
     """
@@ -38,4 +41,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.stdout.write('\n')
+        sys.exit(0)
