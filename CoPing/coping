@@ -2,9 +2,9 @@
 
 import sys
 import argparse
-from ping import Ping
-from ping import PingSuccess
-from ping import PingTimeout
+from CoPing.ping import Ping
+from CoPing.ping import PingSuccess
+from CoPing.ping import PingTimeout
 
 
 class CoPing(object):
