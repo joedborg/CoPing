@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(
-    name='PyPing',
+    name='CoPing',
     version='0.1.0',
     packages=['argparse', 'os', 'select', 'signal', 'socket', 'struct', 'sys', 'time'],
     url='https://github.com/joedborg/PyPing',

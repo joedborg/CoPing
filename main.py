@@ -5,7 +5,7 @@ from ping import PingSuccess
 from ping import PingTimeout
 
 
-class PyPing(object):
+class CoPing(object):
     """
     Send pings and write the results like
     a Cisco router.
@@ -43,7 +43,7 @@ def main():
 
     args = parser.parse_args()
 
-    run = PyPing(args)
+    run = CoPing(args)
     try:
         run()
     except KeyboardInterrupt:
