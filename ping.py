@@ -32,6 +32,25 @@ ICMP_MAX_RECV = 2048 # Max size of incoming buffer
 MAX_SLEEP = 1000
 
 
+class PingSuccess(object):
+    def __init__(self, delay, ip, packet_size, ip_header, icmp_header):
+        self.delay = delay
+        self.ip = ip
+        self.packet_size = packet_size
+        self.ip_header = ip_header
+        self.icmp_header = icmp_header
+
+
+class PingTimeout(object):
+    def __init__(self, dest):
+        self.dest = dest
+
+
+class PingUnkownHost(object):
+    def __init__(self, dest):
+        self.dest = dest
+
+
 def calculate_checksum(source_string):
     """
     A port of the functionality of in_cksum() from ping.c
@@ -91,32 +110,12 @@ def to_ip(addr):
         return addr
     return socket.gethostbyname(addr)
 
-class PingSuccess(object):
-    def __init__(self, delay, ip, packet_size, ip_header, icmp_header):
-        self.delay = delay
-        self.ip = ip
-        self.packet_size = packet_size
-        self.ip_header = ip_header
-        self.icmp_header = icmp_header
-
-class PingFailure(object):
-    def __init__(self):
-        pass
-
-class PingTimeout(object):
-    def __init__(self):
-        pass
-
-class PingUnkownHost(object):
-    def __init__(object):
-        pass
 
 class Ping(object):
-    def __init__(self, destination, timeout=1000, packet_size=55, own_id=None, silent=False):
+    def __init__(self, destination, timeout=1000, packet_size=55, own_id=None):
         self.destination = destination
         self.timeout = timeout
         self.packet_size = packet_size
-        self.silent = silent
         if own_id is None:
             self.own_id = os.getpid() & 0xFFFF
         else:
@@ -125,9 +124,7 @@ class Ping(object):
         try:
              self.dest_ip = to_ip(self.destination)
         except socket.gaierror as e:
-            self.print_unknown_host(e)
-        else:
-            self.print_start()
+            return PingUnkownHost()
 
         self.seq_number = 0
         self.send_count = 0
@@ -135,48 +132,6 @@ class Ping(object):
         self.min_time = 999999999
         self.max_time = 0.0
         self.total_time = 0.0
-
-    def print_start(self):
-        if not self.silent:
-            print("\nPYTHON-PING %s (%s): %d data bytes" % (self.destination, self.dest_ip, self.packet_size))
-
-    def print_unknown_host(self, e):
-        if not self.silent:
-            print("\nPYTHON-PING: Unknown host: %s (%s)\n" % (self.destination, e.args[1]))
-        sys.exit(-1)
-
-    def print_success(self, delay, ip, packet_size, ip_header, icmp_header):
-        if not self.silent:
-            if ip == self.destination:
-                from_info = ip
-            else:
-                from_info = "%s (%s)" % (self.destination, ip)
-
-            print("%d bytes from %s: icmp_seq=%d ttl=%d time=%.1f ms" % (
-                packet_size, from_info, icmp_header["seq_number"], ip_header["ttl"], delay)
-            )
-
-    def print_failed(self):
-        if not self.silent:
-            print("Request timed out.")
-
-    def print_exit(self):
-        if not self.silent:
-            print("\n----%s PYTHON PING Statistics----" % (self.destination))
-
-            lost_count = self.send_count - self.receive_count
-            lost_rate = float(lost_count) / self.send_count * 100.0
-
-            print("%d packets transmitted, %d packets received, %0.1f%% packet loss" % (
-                self.send_count, self.receive_count, lost_rate
-            ))
-
-            if self.receive_count > 0:
-                print("round-trip (ms)  min/avg/max = %0.3f/%0.3f/%0.3f" % (
-                    self.min_time, self.total_time / self.receive_count, self.max_time
-                ))
-
-            print("")
 
     def signal_handler(self, signum, frame):
         """
@@ -198,29 +153,6 @@ class Ping(object):
         unpacked_data = struct.unpack(struct_format, data)
         return dict(zip(names, unpacked_data))
 
-    def run(self, count=None, deadline=None):
-        """
-        Send and receive pings in a loop. Stop if count or until deadline.
-        """
-        self.setup_signal_handler()
-
-        while True:
-            delay = self.do()
-
-            self.seq_number += 1
-            if count and self.seq_number >= count:
-                break
-            if deadline and self.total_time >= deadline:
-                break
-
-            if delay == None:
-                delay = 0
-
-            # Pause for the remainder of the MAX_SLEEP period (if applicable)
-            if (MAX_SLEEP > delay):
-                time.sleep((MAX_SLEEP - delay) / 1000.0)
-
-        self.print_exit()
 
     def do(self):
         """
@@ -255,10 +187,9 @@ class Ping(object):
             if self.max_time < delay:
                 self.max_time = delay
 
-            self.print_success(delay, ip, packet_size, ip_header, icmp_header)
-            return delay
+            return PingSuccess(delay, ip, packet_size, ip_header, icmp_header)
         else:
-            self.print_failed()
+            return PingTimeout(self.destination)
 
     def send_one_ping(self, current_socket):
         """
@@ -346,34 +277,23 @@ class Ping(object):
                 return None, 0, 0, 0, 0
 
 
-def verbose_ping(hostname, timeout=1000, count=3, packet_size=55):
-    p = Ping(hostname, timeout, packet_size)
-    p.run(count)
+    def print_header(self, iterations="unlimited"):
+        print("Type escape sequence CTRL + C to abort.")
+        print("Sending %s, %s-byte ICMP Echos to %s, timeout is %s milliseconds:" % (
+            iterations, self.packet_size, self.destination, self.timeout
+        ))
 
+    def print_statistics(self, interrupted=False):
+        if interrupted and self.send_count >= self.receive_count:
+            self.send_count = self.send_count - 1 # Remove the interrupted ping.
+        lost_count = self.send_count - self.receive_count
+        lost_rate = float(lost_count) / self.send_count * 100.0
 
+        print("%d packets transmitted, %d packets received, %0.1f%% packet loss" % (
+            self.send_count, self.receive_count, lost_rate
+        ))
 
-
-if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        print "DEMO"
-
-        # These should work:
-        verbose_ping("heise.de")
-        verbose_ping("google.com")
-
-        # Inconsistent on Windows w/ ActivePython (Python 3.2 resolves correctly
-        # to the local host, but 2.7 tries to resolve to the local *gateway*)
-        verbose_ping("localhost")
-
-        # Should fail with 'getaddrinfo print_failed':
-        verbose_ping("foobar_url.foobar")
-
-        # Should fail (timeout), but it depends on the local network:
-        verbose_ping("192.168.255.254")
-
-        # Should fails with 'The requested address is not valid in its context':
-        verbose_ping("0.0.0.0")
-    elif len(sys.argv) == 2:
-        verbose_ping(sys.argv[1])
-    else:
-        print "Error: call ./ping.py domain.tld"
+        if self.receive_count > 0:
+            print("round-trip (ms)  min/avg/max = %0.3f/%0.3f/%0.3f\n" % (
+                self.min_time, self.total_time / self.receive_count, self.max_time
+            ))

@@ -1,6 +1,9 @@
 import sys
 import argparse
 from ping import Ping
+from ping import PingSuccess
+from ping import PingTimeout
+
 
 class PyPing(object):
     """
@@ -19,14 +22,17 @@ class PyPing(object):
         Run the ping, print '!' for success
         and '.' for failure.
         """
-        p = Ping(self.destination, silent=True)
+        self.ping = Ping(self.destination)
+        self.ping.print_header()
         while True:
-            if p.do():
+            attempt = self.ping.do()
+            if isinstance(attempt, PingSuccess):
                 sys.stdout.write('!')
                 sys.stdout.flush()
-            else:
+            elif isinstance(attempt, PingTimeout):
                 sys.stdout.write('.')
                 sys.stdout.flush()
+
 
 def main():
     """
@@ -37,14 +43,14 @@ def main():
 
     args = parser.parse_args()
 
-    do = PyPing(args)
-    do()
-
+    run = PyPing(args)
+    try:
+        run()
+    except KeyboardInterrupt:
+        sys.stdout.write('\n')
+        run.ping.print_statistics(interrupted=True)
+        sys.exit(0)
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        sys.stdout.write('\n')
-        sys.exit(0)
+    main()

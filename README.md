@@ -1,6 +1,8 @@
 ## PyPing
 
-Ping.py is ready, but main.py isn't.  Feel free to use the ping.py library.
+A Cisco style ping tool, written in Python.  This style of pinging is
+much more suited to large, fast timeout pings; ideal for testing a link's
+stability and consistency.
 
 ## Example
 ```
