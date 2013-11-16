@@ -1,4 +1,5 @@
-import sys, argparse
+import sys
+import argparse
 from ping import Ping
 
 class PyPing(object):

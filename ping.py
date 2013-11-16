@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 """
     https://github.com/joedborg/PyPing/
     A pure python ping implementation using raw sockets.
@@ -10,8 +7,6 @@
 
     Adapted from the original at https://github.com/jedie/python-ping/.
 """
-
-
 import os
 import select
 import signal
@@ -185,7 +180,7 @@ class Ping(object):
 
     def signal_handler(self, signum, frame):
         """
-        Handle print_exit via signals
+        Handle print_exit via signals.
         """
         self.print_exit()
         print("\n(Terminated with signal %d)\n" % (signum))
@@ -197,13 +192,15 @@ class Ping(object):
             signal.signal(signal.SIGBREAK, self.signal_handler)
 
     def header2dict(self, names, struct_format, data):
-        """ unpack the raw received IP and ICMP header informations to a dict """
+        """
+        Unpack the raw received IP and ICMP header information to a dict.
+        """
         unpacked_data = struct.unpack(struct_format, data)
         return dict(zip(names, unpacked_data))
 
     def run(self, count=None, deadline=None):
         """
-        send and receive pings in a loop. Stop if count or until deadline.
+        Send and receive pings in a loop. Stop if count or until deadline.
         """
         self.setup_signal_handler()
 
@@ -227,7 +224,7 @@ class Ping(object):
 
     def do(self):
         """
-        Send one ICMP ECHO_REQUEST and receive the response until self.timeout
+        Send one ICMP ECHO_REQUEST and receive the response until self.timeout.
         """
         try: # One could use UDP here, but it's obscure
             current_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.getprotobyname("icmp"))
@@ -265,7 +262,7 @@ class Ping(object):
 
     def send_one_ping(self, current_socket):
         """
-        Send one ICMP ECHO_REQUEST
+        Send one ICMP ECHO_REQUEST.
         """
         # Header is type (8), code (8), checksum (16), id (16), sequence (16)
         checksum = 0
@@ -305,7 +302,7 @@ class Ping(object):
 
     def receive_one_ping(self, current_socket):
         """
-        Receive the ping from the socket. timeout = in ms
+        Receive the ping from the socket. timeout = in ms.
         """
         timeout = self.timeout / 1000.0
 
@@ -352,6 +349,8 @@ class Ping(object):
 def verbose_ping(hostname, timeout=1000, count=3, packet_size=55):
     p = Ping(hostname, timeout, packet_size)
     p.run(count)
+
+
 
 
 if __name__ == '__main__':
