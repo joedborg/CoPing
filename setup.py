@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='CoPing',
     version='0.1.0',
-    packages=['argparse', 'os', 'select', 'signal', 'socket', 'struct', 'sys', 'time'],
+    packages=['CoPing'],
     url='https://github.com/joedborg/PyPing',
     license='GPLv2',
     author='Joe Borg',
