@@ -2,9 +2,10 @@ from distutils.core import setup
 
 setup(
     name='CoPing',
-    version='0.1.0',
+    version='0.1.1',
     packages=['CoPing'],
     url='https://github.com/joedborg/PyPing',
+    scripts=['CoPing/coping'],
     license='GPLv2',
     author='Joe Borg',
     author_email='mail@jdborg.com',
