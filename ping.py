@@ -8,7 +8,7 @@
     Note that ICMP messages can only be send from processes running as root
     (in Windows, you must run this script as 'Administrator').
 
-    Adapted by me from the original at https://github.com/jedie/python-ping/.
+    Adapted from the original at https://github.com/jedie/python-ping/.
 """
 
 
@@ -96,6 +96,25 @@ def to_ip(addr):
         return addr
     return socket.gethostbyname(addr)
 
+class PingSuccess(object):
+    def __init__(self, delay, ip, packet_size, ip_header, icmp_header):
+        self.delay = delay
+        self.ip = ip
+        self.packet_size = packet_size
+        self.ip_header = ip_header
+        self.icmp_header = icmp_header
+
+class PingFailure(object):
+    def __init__(self):
+        pass
+
+class PingTimeout(object):
+    def __init__(self):
+        pass
+
+class PingUnkownHost(object):
+    def __init__(object):
+        pass
 
 class Ping(object):
     def __init__(self, destination, timeout=1000, packet_size=55, own_id=None, silent=False):
@@ -109,8 +128,7 @@ class Ping(object):
             self.own_id = own_id
 
         try:
-            # FIXME: Use destination only for display this line here? see: https://github.com/jedie/python-ping/issues/3
-            self.dest_ip = to_ip(self.destination)
+             self.dest_ip = to_ip(self.destination)
         except socket.gaierror as e:
             self.print_unknown_host(e)
         else:
@@ -122,8 +140,6 @@ class Ping(object):
         self.min_time = 999999999
         self.max_time = 0.0
         self.total_time = 0.0
-
-    #--------------------------------------------------------------------------
 
     def print_start(self):
         if not self.silent:
@@ -144,8 +160,6 @@ class Ping(object):
             print("%d bytes from %s: icmp_seq=%d ttl=%d time=%.1f ms" % (
                 packet_size, from_info, icmp_header["seq_number"], ip_header["ttl"], delay)
             )
-            #print("IP header: %r" % ip_header)
-            #print("ICMP header: %r" % icmp_header)
 
     def print_failed(self):
         if not self.silent:
@@ -156,7 +170,6 @@ class Ping(object):
             print("\n----%s PYTHON PING Statistics----" % (self.destination))
 
             lost_count = self.send_count - self.receive_count
-            #print("%i packets lost" % lost_count)
             lost_rate = float(lost_count) / self.send_count * 100.0
 
             print("%d packets transmitted, %d packets received, %0.1f%% packet loss" % (
@@ -170,8 +183,6 @@ class Ping(object):
 
             print("")
 
-    #--------------------------------------------------------------------------
-
     def signal_handler(self, signum, frame):
         """
         Handle print_exit via signals
@@ -183,17 +194,12 @@ class Ping(object):
     def setup_signal_handler(self):
         signal.signal(signal.SIGINT, self.signal_handler)   # Handle Ctrl-C
         if hasattr(signal, "SIGBREAK"):
-            # Handle Ctrl-Break e.g. under Windows
             signal.signal(signal.SIGBREAK, self.signal_handler)
-
-    #--------------------------------------------------------------------------
 
     def header2dict(self, names, struct_format, data):
         """ unpack the raw received IP and ICMP header informations to a dict """
         unpacked_data = struct.unpack(struct_format, data)
         return dict(zip(names, unpacked_data))
-
-    #--------------------------------------------------------------------------
 
     def run(self, count=None, deadline=None):
         """
@@ -349,7 +355,6 @@ def verbose_ping(hostname, timeout=1000, count=3, packet_size=55):
 
 
 if __name__ == '__main__':
-    # FIXME: Add a real CLI
     if len(sys.argv) == 1:
         print "DEMO"
 
