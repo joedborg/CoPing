@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='CoPing',
-    version='0.1.3',
+    version='0.1.4',
     packages=['CoPing'],
     url='https://github.com/joedborg/PyPing',
     scripts=['CoPing/coping'],
