@@ -17,17 +17,17 @@ import time
 
 
 if sys.platform.startswith("win32"):
-    # On Windows, the best timer is time.clock()
+    # On Windows, the best timer is time.clock().
     default_timer = time.clock
 else:
-    # On most other platforms the best timer is time.time()
+    # On most other platforms the best timer is time.time().
     default_timer = time.time
 
 
-# ICMP parameters
-ICMP_ECHOREPLY = 0 # Echo reply (per RFC792)
-ICMP_ECHO = 8 # Echo request (per RFC792)
-ICMP_MAX_RECV = 2048 # Max size of incoming buffer
+# ICMP parameters.
+ICMP_ECHOREPLY = 0    # Echo reply (per RFC792).
+ICMP_ECHO = 8         # Echo request (per RFC792).
+ICMP_MAX_RECV = 2048  # Max size of incoming buffer.
 
 MAX_SLEEP = 1000
 
@@ -46,7 +46,7 @@ class PingTimeout(object):
         self.dest = dest
 
 
-class PingUnkownHost(object):
+class PingUnknownHost(object):
     def __init__(self, dest):
         self.dest = dest
 
@@ -56,37 +56,35 @@ def calculate_checksum(source_string):
     A port of the functionality of in_cksum() from ping.c
     Ideally this would act on the string as a series of 16-bit ints (host
     packed), but this works.
-    Network data is big-endian, hosts are typically little-endian
+    Network data is big-endian, hosts are typically little-endian.
     """
-    countTo = (int(len(source_string) / 2)) * 2
-    sum = 0
+    count_to = (int(len(source_string) / 2)) * 2
+    total = 0
     count = 0
 
-    # Handle bytes in pairs (decoding as short ints)
-    loByte = 0
-    hiByte = 0
-    while count < countTo:
-        if (sys.byteorder == "little"):
-            loByte = source_string[count]
-            hiByte = source_string[count + 1]
+    # Handle bytes in pairs (decoding as short ints).
+    while count < count_to:
+        if sys.byteorder == "little":
+            lo_byte = source_string[count]
+            hi_byte = source_string[count + 1]
         else:
-            loByte = source_string[count + 1]
-            hiByte = source_string[count]
-        sum = sum + (ord(hiByte) * 256 + ord(loByte))
+            lo_byte = source_string[count + 1]
+            hi_byte = source_string[count]
+        total += (ord(hi_byte) * 256 + ord(lo_byte))
         count += 2
 
-    # Handle last byte if applicable (odd-number of bytes)
-    # Endianness should be irrelevant in this case
-    if countTo < len(source_string): # Check for odd length
-        loByte = source_string[len(source_string) - 1]
-        sum += ord(loByte)
+    # Handle last byte if applicable (odd-number of bytes).
+    # Endianness should be irrelevant in this case.
+    if count_to < len(source_string):  # Check for odd length.
+        lo_byte = source_string[len(source_string) - 1]
+        total += ord(lo_byte)
 
-    sum &= 0xffffffff # Truncate sum to 32 bits (a variance from ping.c, which
-                      # uses signed ints, but overflow is unlikely in ping)
+    total &= 0xffffffff  # Truncate sum to 32 bits (a variance from ping.c, which
+                         # uses signed ints, but overflow is unlikely in ping).
 
-    sum = (sum >> 16) + (sum & 0xffff)    # Add high 16 bits to low 16 bits
-    sum += (sum >> 16)                    # Add carry from above (if any)
-    answer = ~sum & 0xffff                # Invert and truncate to 16 bits
+    total = (total >> 16) + (total & 0xffff)  # Add high 16 bits to low 16 bits.
+    total += (total >> 16)                    # Add carry from above (if any).
+    answer = ~total & 0xffff                  # Invert and truncate to 16 bits.
     answer = socket.htons(answer)
 
     return answer
@@ -123,9 +121,9 @@ class Ping(object):
             self.own_id = own_id
 
         try:
-             self.dest_ip = to_ip(self.destination)
-        except socket.gaierror as e:
-            return PingUnkownHost()
+            self.dest_ip = to_ip(self.destination)
+        except socket.gaierror:
+            return PingUnknownHost()
 
         self.seq_number = 0
         self.send_count = 0
@@ -139,7 +137,7 @@ class Ping(object):
         Handle print_exit via signals.
         """
         self.print_exit()
-        print("\n(Terminated with signal %d)\n" % (signum))
+        print("\n(Terminated with signal %d)\n" % signum)
         sys.exit(0)
 
     def setup_signal_handler(self):
@@ -154,25 +152,24 @@ class Ping(object):
         unpacked_data = struct.unpack(struct_format, data)
         return dict(zip(names, unpacked_data))
 
-
     def do(self):
         """
         Send one ICMP ECHO_REQUEST and receive the response until self.timeout.
         """
-        try: # One could use UDP here, but it's obscure
+        try:  # Could use UDP here, but it's obscure.
             current_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.getprotobyname("icmp"))
         except socket.error as (errno, msg):
             if errno == 1:
-                # Operation not permitted - Add more information to traceback
+                # Operation not permitted - Add more information to traceback.
                 etype, evalue, etb = sys.exc_info()
                 evalue = etype(
                     "%s - Note that ICMP messages can only be send from processes running as root." % evalue
                 )
                 raise etype, evalue, etb
-            raise # raise the original error
+            raise  # Raise the original error.
 
         send_time = self.send_one_ping(current_socket)
-        if send_time == None:
+        if not send_time:
             return
         self.send_count += 1
 
@@ -196,7 +193,7 @@ class Ping(object):
         """
         Send one ICMP ECHO_REQUEST.
         """
-        # Header is type (8), code (8), checksum (16), id (16), sequence (16)
+        # Header is type (8), code (8), checksum (16), id (16), sequence (16).
         checksum = 0
 
         # Make a dummy header with a 0 checksum.
@@ -204,14 +201,14 @@ class Ping(object):
             "!BBHHH", ICMP_ECHO, 0, checksum, self.own_id, self.seq_number
         )
 
-        padBytes = []
-        startVal = 0x42
-        for i in range(startVal, startVal + (self.packet_size)):
-            padBytes += [(i & 0xff)]  # Keep chars in the 0-255 range
-        data = bytes(padBytes)
+        pad_bytes = []
+        start_val = 0x42
+        for i in range(start_val, start_val + self.packet_size):
+            pad_bytes += [(i & 0xff)]  # Keep chars in the 0-255 range.
+        data = bytes(pad_bytes)
 
         # Calculate the checksum on the data and the dummy header.
-        checksum = calculate_checksum(header + data) # Checksum is in network order
+        checksum = calculate_checksum(header + data)  # Checksum is in network order.
 
         # Now that we have the right checksum, we put that in. It's just easier
         # to make up a new header than to stuff it into the dummy.
@@ -224,7 +221,7 @@ class Ping(object):
         send_time = default_timer()
 
         try:
-            current_socket.sendto(packet, (self.destination, 1)) # Port number is irrelevant for ICMP
+            current_socket.sendto(packet, (self.destination, 1))  # Port number is irrelevant for ICMP.
         except socket.error as e:
             print("General failure (%s)" % (e.args[1]))
             current_socket.close()
@@ -238,11 +235,11 @@ class Ping(object):
         """
         timeout = self.timeout / 1000.0
 
-        while True: # Loop while waiting for packet or timeout
+        while True:  # Loop while waiting for packet or timeout.
             select_start = default_timer()
-            inputready, outputready, exceptready = select.select([current_socket], [], [], timeout)
+            input_ready, output_ready, except_ready = select.select([current_socket], [], [], timeout)
             select_duration = (default_timer() - select_start)
-            if inputready == []: # timeout
+            if not input_ready:  # Timeout.
                 return None, 0, 0, 0, 0
 
             receive_time = default_timer()
@@ -258,7 +255,7 @@ class Ping(object):
                 data=packet_data[20:28]
             )
 
-            if icmp_header["packet_id"] == self.own_id: # Our packet
+            if icmp_header["packet_id"] == self.own_id:  # Our packet.
                 ip_header = self.header2dict(
                     names=[
                         "version", "type", "length",
@@ -270,13 +267,11 @@ class Ping(object):
                 )
                 packet_size = len(packet_data) - 28
                 ip = socket.inet_ntoa(struct.pack("!I", ip_header["src_ip"]))
-                # XXX: Why not ip = address[0] ???
                 return receive_time, packet_size, ip, ip_header, icmp_header
 
             timeout = timeout - select_duration
             if timeout <= 0:
                 return None, 0, 0, 0, 0
-
 
     def print_header(self, iterations="unlimited"):
         print("Type escape sequence CTRL + C to abort.")
@@ -286,7 +281,7 @@ class Ping(object):
 
     def print_statistics(self, interrupted=False):
         if interrupted and self.send_count >= self.receive_count:
-            self.send_count = self.send_count - 1 # Remove the interrupted ping.
+            self.send_count -= 1  # Remove the interrupted ping.
         lost_count = self.send_count - self.receive_count
         lost_rate = float(lost_count) / self.send_count * 100.0
 
